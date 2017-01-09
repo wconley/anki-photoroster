@@ -11,7 +11,9 @@ from tempfile import TemporaryDirectory
 
 import gi
 gi.require_version("Poppler", "0.18")
+gi.require_version("Gdk", "3.0")
 from gi.repository import Poppler
+from gi.repository import Gdk
 
 USE_PDFIMAGES_PROGRAM = False
 
@@ -107,32 +109,6 @@ def pdf_get_text_line(pagetext, xmin, xmax, ymin, ymax):
     return "".join([c for y, c in text if y == top_y]).strip()
 
 
-def pdf_get_text(pagetext, xmin, xmax, ymin, ymax):
-    """Get the text within an area of a page, as a list of lines"""
-
-    lines = []
-    thisline = []
-    lasty = 0
-    for y, x, c in pagetext:
-        if not (xmin <= x <= xmax and ymin <= y <= ymax):
-            continue
-        if c == "\n":
-            if thisline:
-                lines.append("".join(thisline).strip())
-                thisline = []
-            lasty = y
-            continue
-        if y > lasty and thisline:
-            lines.append("".join(thisline).strip())
-            thisline = [c]
-        else:
-            thisline.append(c)
-        lasty = y
-    if thisline:
-        lines.append("".join(thisline).strip())
-    return lines
-
-
 class Student(object):
     """A class to represent a single student's information and photo"""
 
@@ -143,19 +119,20 @@ class Student(object):
         self.tags = tags.split()
 
     def image_filename(self):
-        extension = "jpg" if USE_PDFIMAGES_PROGRAM else "png"
-        return "UCLA_Student_{}.{}".format(self.idnumber, extension)
+        return "UCLA_Student_{}.jpg".format(self.idnumber)
 
     def save_image(self, directory, duplicate_callback=None):
         oldpath = None
         savepath = os.path.join(directory, self.image_filename())
         if os.path.exists(savepath):
             oldpath = savepath
-            savepath = savepath[:-4] + ".new" + savepath[-4:]
+            savepath = savepath[:-4] + ".new.jpg"
         if USE_PDFIMAGES_PROGRAM:
             shutil.move(self.image, savepath)
         else:
-            self.image.write_to_png(savepath)
+            pixbuf = Gdk.pixbuf_get_from_surface(self.image, 0, 0, 
+                    self.image.get_width(), self.image.get_height())
+            pixbuf.savev(savepath, "jpeg", ["quality"], ["90"])
         if oldpath:
             if filecmp.cmp(oldpath, savepath):
                 # The new one is identical to the old one

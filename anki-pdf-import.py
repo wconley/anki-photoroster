@@ -30,19 +30,9 @@ format.) Then when you run this program, use the name of that text file as the
 
 import os
 import argparse
-import subprocess
-import re
-import csv
-import shutil
-import filecmp
-from contextlib import ExitStack
-from tempfile import TemporaryDirectory
 
-import gi
-gi.require_version("Poppler", "0.18")
-from gi.repository import Poppler
+from photoroster import load_existing_students, photo_roster_iterator
 
-USE_PDFIMAGES_PROGRAM = True
 
 def parse_args():
     parser = argparse.ArgumentParser(description=DESCRIPTION, epilog=EPILOG, 
@@ -68,227 +58,7 @@ def parse_args():
     return parser.parse_args()
 
 
-class Student(object):
-    """A class to represent a single student's information and photo"""
-
-    def __init__(self, idnumber, name, image, tags):
-        self.idnumber = idnumber
-        self.preferredname, self.fullname = Student._format_name(name)
-        self.image = image
-        self.tags = tags
-
-    def image_filename(self):
-        extension = "jpg" if USE_PDFIMAGES_PROGRAM else "png"
-        return "UCLA_Student_{}.{}".format(self.idnumber, extension)
-
-    def save_image(self, directory, duplicate_callback=None):
-        oldpath = None
-        savepath = os.path.join(directory, self.image_filename())
-        if os.path.exists(savepath):
-            oldpath = savepath
-            savepath = savepath[:-4] + ".new" + savepath[-4:]
-        if USE_PDFIMAGES_PROGRAM:
-            shutil.move(self.image, savepath)
-        else:
-            self.image.write_to_png(savepath)
-        if oldpath:
-            if filecmp.cmp(oldpath, savepath):
-                # The new one is identical to the old one
-                os.remove(savepath)
-            elif duplicate_callback:
-                duplicate_callback(self, oldpath, savepath)
-
-    def __str__(self):
-        imagetag = '<img src="{}">'.format(self.image_filename())
-        return ";".join((self.idnumber, imagetag, self.preferredname, 
-                self.fullname, self.tags))
-
-    ##### Several methods to deal with formatting names nicely #####
-    _PARENSFORMAT = re.compile(r'(.*)[(](.*)[)](.*)')
-    @staticmethod
-    def _format_name(name):
-        """Take a name as provided by the registrar, and format it nicely
-
-        The UCLA registrar/my.ucla provides names formatted as 
-            LASTNAMES, FIRSTNAMES MIDDLENAMES, SUFFIX
-        in all uppercase. More recently, they have started providing the option 
-        for students to specify a preferred name, if they wish to be called 
-        something other than their "official" first name. In that case, the 
-        format is 
-            LASTNAMES, PREFERREDNAMES (FIRSTNAMES)
-        also in all uppercase. (I have yet to see a name in this format with a 
-        suffix.) This method attempts to parse these name formats, decide on 
-        an appropriate "preferred name" and "full name", and adjust the case of 
-        these so that they're not all uppercase. 
-
-        Arguments: 
-            name - A name in one of the formats above, as provided by my.ucla
-        Returns: 
-            A 2-tuple of the form (preferred_name, full_name)
-        """
-
-        match = Student._PARENSFORMAT.match(name)
-        if match:
-            name, realfirstname, junk = match.groups()
-            realfirstname = Student._name_fixcase(realfirstname)
-            if junk:
-                raise ValueError("Unexpected characters after parentheses " + 
-                        "in name {}".format(name))
-        else:
-            realfirstname = ""
-        components = name.split(", ")
-        if len(components) > 3:
-            raise ValueError("Too many components in name {}".format(name))
-        if len(components) == 3:
-            suffix = components[2]
-            if suffix == "JR" or suffix == "SR":
-                suffix = suffix.title()
-        else:
-            suffix = ""
-        if len(components) >= 2:
-            if realfirstname:
-                firstname = Student._name_fixcase(components[1])
-                middlename = ""
-            else:
-                firstname, junk, middlename = components[1].partition(" ")
-                firstname = Student._name_fixcase(firstname)
-                middlename = Student._name_fixcase(middlename)
-                realfirstname = firstname
-        else:
-            firstname = middlename = ""
-        lastname = Student._name_fixcase(components[0])
-        if firstname:
-            preferredname = "{} {}".format(firstname, lastname)
-        else:
-            preferredname = lastname
-        fullname = " ".join(filter(None, 
-                (realfirstname, middlename, lastname, suffix)))
-        return preferredname, fullname
-
-    @staticmethod
-    def _name_fixcase(name):
-        "Correct the case (and possibly spacing) of an entire name"
-
-        return " ".join([Student._name_fixcase_hyphenated(word) for word in 
-                name.split()])
-
-    @staticmethod
-    def _name_fixcase_hyphenated(name):
-        "Take a single (possibly-hyphenated) word from a name, correct its case"
-
-        if name in ("DE", "EL", "LA", "LOS", "LAS"):
-            return name.lower()
-        return "-".join([Student._name_fixcase_word(word) for word in 
-                name.split("-")])
-
-    @staticmethod
-    def _name_fixcase_word(name):
-        "Take a single (nonhyphenated) word from a name, correct its case"
-
-        name = name[:1] + name[1:].lower()    # No, I don't mean to use title()
-        if name[:2] in ("Mc", "O'", "D'"):
-            name = name[:2] + name[2:3].upper() + name[3:]
-        return name
-
-
-##### Functions to deal with PDF files... #####
-def photo_roster_iterator(path):
-    "Iterate over a photo roster, yielding a Student object for each student"
-
-    path = os.path.abspath(os.path.expanduser(path))
-    if not os.path.isfile(path):
-        raise FileNotFoundError("File not found: {}".format(path))
-    with ExitStack() as context_manager_stack: # Does nothing, for now
-        if USE_PDFIMAGES_PROGRAM:
-            # Create a temp directory, and dump all the photos in it.
-            # Thanks to the context manager, it's automagically cleaned up later
-            tempdir = context_manager_stack.enter_context(TemporaryDirectory())
-            image_prefix = os.path.join(tempdir, "photo")
-            subprocess.check_call(["pdfimages", "-j", path, image_prefix], 
-                    stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-        # Open the PDF file using Poppler
-        uri = "file://" + path
-        roster = Poppler.Document.new_from_file(uri)
-        # First get the information about the class from the top of the 1st page
-        page = roster.get_page(0)
-        header_text = page.get_text().splitlines()[0]
-        course_tag = make_course_tag(header_text[len("Photo Roster for "):])
-        # Now iterate over all the students in the roster
-        for pagenum in range(roster.get_n_pages()):
-            page = roster.get_page(pagenum)
-            pagetext = [(rect.y1, rect.x1, char) for char, rect in 
-                    zip(page.get_text(), page.get_text_layout()[1])]
-            for image_map in page.get_image_mapping():
-                # Grab the text for the student ID number
-                xmin, xmax = image_map.area.x2, image_map.area.x2 + 99
-                ymin, ymax = image_map.area.y1, image_map.area.y2
-                idnumber = pdf_get_text(pagetext, xmin, xmax, ymin, ymax)[0]
-                # Grab the text for the name
-                xmin, xmax = image_map.area.x1, image_map.area.x2 + 99
-                ymin, ymax = image_map.area.y2, image_map.area.y2 + 18
-                name = pdf_get_text(pagetext, xmin, xmax, ymin, ymax)[0]
-                # Get the image
-                if USE_PDFIMAGES_PROGRAM:
-                    image_number = pagenum * 6 + image_map.image_id
-                    image = "{}-{:03}.jpg".format(image_prefix, image_number)
-                else:
-                    image = page.get_image(image_map.image_id)
-                # Construct a Student object and yield it
-                yield Student(idnumber, name, image, course_tag)
-
-def pdf_get_text(pagetext, xmin, xmax, ymin, ymax):
-    """Get the text within an area of a page, as a list of lines"""
-
-    lines = []
-    thisline = []
-    lasty = 0
-    for y, x, c in pagetext:
-        if not (xmin <= x <= xmax and ymin <= y <= ymax):
-            continue
-        if c == "\n":
-            if thisline:
-                lines.append("".join(thisline).strip())
-                thisline = []
-            lasty = y
-            continue
-        if y > lasty and thisline:
-            lines.append("".join(thisline).strip())
-            thisline = [c]
-        else:
-            thisline.append(c)
-        lasty = y
-    if thisline:
-        lines.append("".join(thisline).strip())
-    return lines
-
-
-##### A few utility functions #####
-TERM_ABBREVS = {"W": "Winter", "S": "Spring", "1": "Summer", "F": "Fall"}
-COURSEDESC_FORMAT = re.compile(r'\s*(\S+)\s+(\S+)\s+\S+\s+(\S+)\s+-\s+(\S+)\s*')
-def make_course_tag(course_desc):
-    "Turn, for example, 'MATH 115A LEC 7 - 13F' into 'MATH115A-7-Fall-2013'"
-
-    match = COURSEDESC_FORMAT.fullmatch(course_desc)
-    if not match:
-        raise ValueError("Could not parse the course description {}".format(
-                course_desc))
-    subject, coursenumber, section, term = match.groups()
-    term, year = TERM_ABBREVS[term[2]], term[:2]
-    return "{}{}-{}-{}-20{}".format(subject, coursenumber, section, term, year)
-
-def load_existing_data(existingfilepath):
-    "Load the existing Anki data, if given"
-
-    existing_students = {}
-    if existingfilepath:
-        with open(existingfilepath, newline="") as existingfile:
-            csvreader = csv.reader(existingfile, delimiter="\t")
-            for idnumber, url, prefname, fullname, foo, bar, tags in csvreader:
-                existing_students[idnumber] = (prefname, fullname, tags)
-    return existing_students
-
-
-##### The following functions will need to be customized further #####
+##### The following functions should probably be customized further #####
 def check_existing(student, existing_students):
     existing = existing_students.get(student.idnumber)
     if not existing:
@@ -305,20 +75,26 @@ def check_existing(student, existing_students):
         print("    Keeping the names in Anki. You may want to change this.")
         student.preferredname = preferredname
         student.fullname = fullname
-    tags = tags.split()
-    if student.tags not in tags:
-        tags.append(student.tags)
-    student.tags = " ".join(tags)
+    student.merge_tags(tags.split())
+
 
 def warn_user_callback(student, oldpath, newpath):
+    root, extension = os.path.splitext(oldpath)
+    n = 1
+    while True:
+        new_oldpath = "{}.old{}{}".format(root, n, extension)
+        if not os.path.exists(new_oldpath):
+            break
+        n += 1
+    os.rename(oldpath, new_oldpath)
+    os.rename(newpath, oldpath)
     print("WARNING: A different photo already exists for {}.".format(
             student.preferredname))
     print("    Leaving both in the photos directory.")
-    print("    The old one is {}.".format(oldpath))
-    print("    The new one is {}.".format(newpath))
+    print("    The old one is {}.".format(new_oldpath))
+    print("    The new one is {}.".format(oldpath))
 
 
-##### Finally, our actual main code body. So simple! :-) #####
 if __name__ == "__main__":
     args = parse_args()
     if args.photoroster.lower()[-4:] != ".pdf":
@@ -328,10 +104,11 @@ if __name__ == "__main__":
     photodir = os.path.join(args.ankidir, "collection.media")
     if not os.path.isdir(photodir):
         raise FileNotFoundError("Directory {} does not exist".format(photodir))
-    existing_students = load_existing_data(args.existing)
+    existing_students = load_existing_students(args.existing)
     with open(ankifilepath, "w") as ankifile:
         for student in photo_roster_iterator(args.photoroster):
             student.save_image(photodir, duplicate_callback=warn_user_callback)
             check_existing(student, existing_students)
             print(student, file=ankifile)
+
 
