@@ -3,7 +3,8 @@
 import os
 import subprocess
 import re
-import csv
+import sqlite3
+import json
 import shutil
 import filecmp
 from contextlib import ExitStack
@@ -18,15 +19,24 @@ from gi.repository import Gdk
 USE_PDFIMAGES_PROGRAM = False
 
 
-def load_existing_students(existingfilepath):
-    "Load the existing Anki data, if given. This has nothing to do with PDFs."
+def load_existing_students(ankidir):
+    "Load the existing Anki data. This has nothing to do with PDFs."
 
     existing_students = {}
-    if existingfilepath:
-        with open(existingfilepath, newline="") as existingfile:
-            csvreader = csv.reader(existingfile, delimiter="\t")
-            for idnumber, url, prefname, fullname, foo, bar, tags in csvreader:
-                existing_students[idnumber] = (prefname, fullname, tags)
+    ankidir = os.path.abspath(os.path.expanduser(ankidir))
+    uri = "file://{}?mode=ro".format(os.path.join(ankidir, "collection.anki2"))
+    with sqlite3.connect(uri, uri=True) as db:
+        models = json.loads(db.execute("SELECT models FROM col;").fetchone()[0])
+        for modelID, model in models.items():
+            if model["name"] == "Names and faces":
+                break
+        else:
+            raise ValueError("Did not find note type called 'Names and faces'.")
+        cursor = db.execute("SELECT flds, tags FROM notes WHERE mid = ? ;", 
+                (modelID, ))
+        for (fields, tags) in cursor:
+            idnumber, url, prefname, fullname, *junk = fields.split("\x1f")
+            existing_students[idnumber] = (prefname, fullname, tags)
     return existing_students
 
 
