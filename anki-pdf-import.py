@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# -*- coding: utf-8 -*-
 DESCRIPTION = "Create an Anki import file from a UCLA photo roster PDF file"
 EPILOG = """
 This program will extract student names, ID numbers, and photos from a UCLA 
@@ -30,7 +31,7 @@ later version.)
 import os
 import argparse
 
-from photoroster import load_existing_students, photo_roster_iterator
+from photoroster import load_existing_students, PhotoRoster
 
 
 def parse_args():
@@ -96,10 +97,25 @@ if __name__ == "__main__":
     if not os.path.isdir(photodir):
         raise FileNotFoundError("Directory {} does not exist".format(photodir))
     existing_students = load_existing_students(args.ankidir)
+    print("Read {} existing people from Anki.".format(len(existing_students)))
+    roster = PhotoRoster(args.photoroster)
+    course_tag = " {} ".format(roster.course_tag)
+    this_course = {idnumber for idnumber, (pn, fn, tags) in 
+            existing_students.items() if course_tag in tags}
+    print("    {} of them in this class.".format(len(this_course)))
     with open(ankifilepath, "w") as ankifile:
-        for student in photo_roster_iterator(args.photoroster):
+        for student in roster:
+            this_course.discard(student.idnumber)
             student.save_image(photodir, duplicate_callback=warn_user_callback)
             check_existing(student, existing_students)
             print(student, file=ankifile)
+    if this_course:
+        print("The following students were already tagged as being in this ")
+        print("course in your Anki database, but they're not on this roster. ")
+        print("This probably means you've previously imported a roster for ")
+        print("this class, and these students have since dropped the class: ")
+    for idnumber in this_course:
+        preferredname, fullname, tags = existing_students[idnumber]
+        print("    {} ({})".format(preferredname, fullname))
 
 

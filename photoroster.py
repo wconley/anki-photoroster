@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# -*- coding: utf-8 -*-
 
 import os
 import subprocess
@@ -16,7 +17,7 @@ gi.require_version("Gdk", "3.0")
 from gi.repository import Poppler
 from gi.repository import Gdk
 
-USE_PDFIMAGES_PROGRAM = False
+USE_PDFIMAGES_PROGRAM = True
 
 
 def load_existing_students(ankidir):
@@ -40,83 +41,87 @@ def load_existing_students(ankidir):
     return existing_students
 
 
-def open_pdf_file(path):
-    "Resolves the path and opens the PDF file, using Poppler"
-
-    path = os.path.abspath(os.path.expanduser(path))
-    if not os.path.isfile(path):
-        raise FileNotFoundError("File not found: {}".format(path))
-    uri = "file://" + path
-    return Poppler.Document.new_from_file(uri)
-
-
-def get_num_students(roster):
-    "Quickly calculate the number of students in the roster"
-
-    n = roster.get_n_pages() - 1
-    return n * 6 + len(roster.get_page(n).get_image_mapping())
-
-
 TERM_ABBREVS = {"W": "Winter", "S": "Spring", "1": "Summer", "F": "Fall"}
 COURSEDESC_FORMAT = re.compile(r'\s*(\S+)\s+(\S+)\s+\S+\s+(\S+)\s+-\s+(\S+)\s*')
-def get_course_tag(roster):
-    "Get the course tag (e.g. 'MATH115A-7-Fall-2013') from the top of 'roster'"
+class PhotoRoster(object):
+    def __init__(self, path):
+        "Create a PhotoRoster object from the photo roster PDF file at 'path'"
 
-    header_text = roster.get_page(0).get_text().splitlines()[0]
-    match = COURSEDESC_FORMAT.fullmatch(header_text[len("Photo Roster for "):])
-    if not match:
-        raise ValueError("Could not parse the course description {}".format(
-                header_text))
-    subject, coursenumber, section, term = match.groups()
-    term, year = TERM_ABBREVS[term[2]], term[:2]
-    return "{}{}-{}-{}-20{}".format(subject, coursenumber, section, term, year)
+        self.path = os.path.abspath(os.path.expanduser(path))
+        if not os.path.isfile(self.path):
+            raise FileNotFoundError("File not found: {}".format(self.path))
+        uri = "file://" + self.path
+        self.roster = Poppler.Document.new_from_file(uri)
+        self._course_tag = None
 
+    @property
+    def num_students(self):
+        "Quickly calculate the number of students in this photo roster"
 
-##### The main function (generator actually) that does most of the work #####
-def photo_roster_iterator(path):
-    "Iterate over a photo roster, yielding a Student object for each student"
+        n = self.roster.get_n_pages() - 1
+        return n * 6 + len(self.roster.get_page(n).get_image_mapping())
 
-    with ExitStack() as context_manager_stack: # Does nothing, for now
-        if USE_PDFIMAGES_PROGRAM:
-            # Create a temp directory, and dump all the photos in it.
-            # Thanks to the context manager, it's automagically cleaned up later
-            tempdir = context_manager_stack.enter_context(TemporaryDirectory())
-            image_prefix = os.path.join(tempdir, "photo")
-            subprocess.check_call(["pdfimages", "-j", path, image_prefix], 
-                    stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-        roster = open_pdf_file(path)
-        course_tag = get_course_tag(roster)
-        # Now iterate over all the students in the roster
-        for pagenum in range(roster.get_n_pages()):
-            page = roster.get_page(pagenum)
-            pagetext = [(rect.y1, rect.x1, char) for char, rect in 
-                    zip(page.get_text(), page.get_text_layout()[1])]
-            for image_map in page.get_image_mapping():
-                # Grab the text for the student ID number
-                xmin, xmax = image_map.area.x1 + 169, image_map.area.x1 + 270
-                ymin, ymax = image_map.area.y1, image_map.area.y2
-                idnumber = pdf_get_text_line(pagetext, xmin, xmax, ymin, ymax)
-                # Grab the text for the name
-                xmin, xmax = image_map.area.x1, image_map.area.x1 + 270
-                ymin, ymax = image_map.area.y1 + 197, image_map.area.y1 + 216
-                name = pdf_get_text_line(pagetext, xmin, xmax, ymin, ymax)
-                # Get the image
-                if USE_PDFIMAGES_PROGRAM:
-                    image_number = pagenum * 6 + image_map.image_id
-                    image = "{}-{:03}.jpg".format(image_prefix, image_number)
-                else:
-                    image = page.get_image(image_map.image_id)
-                # Construct a Student object and yield it
-                yield Student(idnumber, name, image, course_tag)
+    @property
+    def course_tag(self):
+        "Get the course tag (e.g. 'MATH115A-7-Fall-2013') from top of roster"
 
+        if self._course_tag is None:
+            header_text = self.roster.get_page(0).get_text().splitlines()[0]
+            match = COURSEDESC_FORMAT.fullmatch(
+                    header_text[len("Photo Roster for "):])
+            if not match:
+                raise ValueError("Could not parse course description {}".format(
+                        header_text))
+            subject, coursenumber, section, term = match.groups()
+            term, year = TERM_ABBREVS[term[2]], term[:2]
+            self._course_tag = "{}{}-{}-{}-20{}".format(subject, coursenumber, 
+                    section, term, year)
+        return self._course_tag
 
-def pdf_get_text_line(pagetext, xmin, xmax, ymin, ymax):
-    """Get the first line of text within an area of a page"""
+    ##### The main function (generator) that does most of the work #####
+    def __iter__(self):
+        "Iterate over this roster, yielding a Student object for each student"
 
-    text = [(y, c) for y, x, c in pagetext if 
-            xmin <= x <= xmax and ymin <= y <= ymax and c != "\n"]
-    top_y = min([y for y, c in text])
-    return "".join([c for y, c in text if y == top_y]).strip()
+        with ExitStack() as context_mgr_stack: # Does nothing, for now
+            if USE_PDFIMAGES_PROGRAM:
+                # Create a temp directory, and dump all the photos in it
+                # Thanks to the context manager, it's automagically cleaned up
+                tempdir = context_mgr_stack.enter_context(TemporaryDirectory())
+                image_prefix = os.path.join(tempdir, "photo")
+                subprocess.check_call(
+                        ["pdfimages", "-j", self.path, image_prefix], 
+                        stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+            # Now iterate over all the students in the roster
+            for pagenumber in range(self.roster.get_n_pages()):
+                page = self.roster.get_page(pagenumber)
+                pagetext = [(rect.y1, rect.x1, char) for char, rect in 
+                        zip(page.get_text(), page.get_text_layout()[1])]
+                for image_map in page.get_image_mapping():
+                    # Top left corner of image:
+                    x1, y1 = image_map.area.x1, image_map.area.y1
+                    # Grab the text for the student ID number
+                    idnumber = PhotoRoster.get_first_line(pagetext, 
+                            x1 + 169, x1 + 270, y1, y1 + 197)
+                    # Grab the text for the name
+                    name = PhotoRoster.get_first_line(pagetext, 
+                            x1, x1 + 270, y1 + 197, y1 + 216)
+                    # Get the image
+                    if USE_PDFIMAGES_PROGRAM:
+                        imagenumber = pagenumber * 6 + image_map.image_id
+                        image = "{}-{:03}.jpg".format(image_prefix, imagenumber)
+                    else:
+                        image = page.get_image(image_map.image_id)
+                    # Construct a Student object and yield it
+                    yield Student(idnumber, name, image, self.course_tag)
+
+    @staticmethod
+    def get_first_line(pagetext, xmin, xmax, ymin, ymax):
+        """Get the first line of text within an area of a page"""
+
+        text = [(y, c) for y, x, c in pagetext if 
+                xmin <= x <= xmax and ymin <= y <= ymax and c != "\n"]
+        top_y = min([y for y, c in text])
+        return "".join([c for y, c in text if y == top_y]).strip()
 
 
 class Student(object):
@@ -124,6 +129,7 @@ class Student(object):
 
     def __init__(self, idnumber, name, image, tags):
         self.idnumber = idnumber
+        self.name_on_roster = name
         self.preferredname, self.fullname = Student._format_name(name)
         self.image = image
         self.tags = tags.split()
