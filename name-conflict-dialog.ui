@@ -96,34 +96,6 @@
                       </packing>
                     </child>
                     <child>
-                      <object class="GtkButton" id="existing_prefname_button">
-                        <property name="label" translatable="yes">→</property>
-                        <property name="visible">True</property>
-                        <property name="can_focus">True</property>
-                        <property name="receives_default">True</property>
-                        <property name="tooltip_text" translatable="yes">Use the existing preferred name</property>
-                        <signal name="clicked" handler="existing_prefname_button_clicked" swapped="no"/>
-                      </object>
-                      <packing>
-                        <property name="left_attach">1</property>
-                        <property name="top_attach">1</property>
-                      </packing>
-                    </child>
-                    <child>
-                      <object class="GtkButton" id="new_prefname_button">
-                        <property name="label" translatable="yes">←</property>
-                        <property name="visible">True</property>
-                        <property name="can_focus">True</property>
-                        <property name="receives_default">True</property>
-                        <property name="tooltip_text" translatable="yes">Use the new preferred name</property>
-                        <signal name="clicked" handler="new_prefname_button_clicked" swapped="no"/>
-                      </object>
-                      <packing>
-                        <property name="left_attach">3</property>
-                        <property name="top_attach">1</property>
-                      </packing>
-                    </child>
-                    <child>
                       <object class="GtkLabel" id="existing_prefname_label">
                         <property name="visible">True</property>
                         <property name="can_focus">False</property>
@@ -214,6 +186,35 @@
                         <property name="width">3</property>
                       </packing>
                     </child>
+                    <child>
+                      <object class="GtkToggleButton" id="existing_prefname_togglebutton">
+                        <property name="label" translatable="yes">→</property>
+                        <property name="visible">True</property>
+                        <property name="can_focus">True</property>
+                        <property name="receives_default">True</property>
+                        <property name="tooltip_text" translatable="yes">Use the preferred name that is already in your Anki collection</property>
+                        <property name="active">True</property>
+                        <signal name="toggled" handler="existing_prefname_togglebutton_toggled" swapped="no"/>
+                      </object>
+                      <packing>
+                        <property name="left_attach">1</property>
+                        <property name="top_attach">1</property>
+                      </packing>
+                    </child>
+                    <child>
+                      <object class="GtkToggleButton" id="new_prefname_togglebutton">
+                        <property name="label" translatable="yes">←</property>
+                        <property name="visible">True</property>
+                        <property name="can_focus">True</property>
+                        <property name="receives_default">True</property>
+                        <property name="tooltip_text" translatable="yes">Use the preferred name from this photo roster</property>
+                        <signal name="toggled" handler="new_prefname_togglebutton_toggled" swapped="no"/>
+                      </object>
+                      <packing>
+                        <property name="left_attach">3</property>
+                        <property name="top_attach">1</property>
+                      </packing>
+                    </child>
                   </object>
                 </child>
                 <child type="label">
@@ -276,34 +277,6 @@
                       </object>
                       <packing>
                         <property name="left_attach">2</property>
-                        <property name="top_attach">1</property>
-                      </packing>
-                    </child>
-                    <child>
-                      <object class="GtkButton" id="existing_fullname_button">
-                        <property name="label" translatable="yes">→</property>
-                        <property name="visible">True</property>
-                        <property name="can_focus">True</property>
-                        <property name="receives_default">True</property>
-                        <property name="tooltip_text" translatable="yes">Use the existing full name</property>
-                        <signal name="clicked" handler="existing_fullname_button_clicked" swapped="no"/>
-                      </object>
-                      <packing>
-                        <property name="left_attach">1</property>
-                        <property name="top_attach">1</property>
-                      </packing>
-                    </child>
-                    <child>
-                      <object class="GtkButton" id="new_fullname_button">
-                        <property name="label" translatable="yes">←</property>
-                        <property name="visible">True</property>
-                        <property name="can_focus">True</property>
-                        <property name="receives_default">True</property>
-                        <property name="tooltip_text" translatable="yes">Use the new full name</property>
-                        <signal name="clicked" handler="new_fullname_button_clicked" swapped="no"/>
-                      </object>
-                      <packing>
-                        <property name="left_attach">3</property>
                         <property name="top_attach">1</property>
                       </packing>
                     </child>
@@ -383,6 +356,35 @@
                         <property name="left_attach">1</property>
                         <property name="top_attach">2</property>
                         <property name="width">3</property>
+                      </packing>
+                    </child>
+                    <child>
+                      <object class="GtkToggleButton" id="existing_fullname_togglebutton">
+                        <property name="label" translatable="yes">→</property>
+                        <property name="visible">True</property>
+                        <property name="can_focus">True</property>
+                        <property name="receives_default">True</property>
+                        <property name="tooltip_text" translatable="yes">Use the full name that is already in your Anki collection</property>
+                        <signal name="toggled" handler="existing_fullname_togglebutton_toggled" swapped="no"/>
+                      </object>
+                      <packing>
+                        <property name="left_attach">1</property>
+                        <property name="top_attach">1</property>
+                      </packing>
+                    </child>
+                    <child>
+                      <object class="GtkToggleButton" id="new_fullname_togglebutton">
+                        <property name="label" translatable="yes">←</property>
+                        <property name="visible">True</property>
+                        <property name="can_focus">True</property>
+                        <property name="receives_default">True</property>
+                        <property name="tooltip_text" translatable="yes">Use the full name from this photo roster</property>
+                        <property name="active">True</property>
+                        <signal name="toggled" handler="new_fullname_togglebutton_toggled" swapped="no"/>
+                      </object>
+                      <packing>
+                        <property name="left_attach">3</property>
+                        <property name="top_attach">1</property>
                       </packing>
                     </child>
                   </object>

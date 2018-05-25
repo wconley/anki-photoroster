@@ -5,149 +5,54 @@
   <object class="GtkImage" id="image1">
     <property name="visible">True</property>
     <property name="can_focus">False</property>
-    <property name="stock">gtk-cancel</property>
+    <property name="icon_name">application-exit</property>
   </object>
   <object class="GtkImage" id="image2">
     <property name="visible">True</property>
     <property name="can_focus">False</property>
-    <property name="stock">gtk-go-forward</property>
+    <property name="icon_name">go-next</property>
   </object>
   <object class="GtkImage" id="image3">
     <property name="visible">True</property>
     <property name="can_focus">False</property>
-    <property name="stock">gtk-directory</property>
+    <property name="icon_name">folder-open</property>
   </object>
   <object class="GtkImage" id="image4">
     <property name="visible">True</property>
     <property name="can_focus">False</property>
-    <property name="stock">gtk-open</property>
+    <property name="icon_name">document-open</property>
   </object>
-  <object class="GtkDialog" id="main_dialog">
+  <object class="GtkWindow" id="window">
     <property name="can_focus">False</property>
-    <property name="type_hint">dialog</property>
-    <child internal-child="vbox">
-      <object class="GtkBox" id="dialog-vbox1">
+    <signal name="delete-event" handler="quit_button_clicked" swapped="no"/>
+    <child>
+      <object class="GtkBox" id="box1">
+        <property name="name">1</property>
+        <property name="visible">True</property>
         <property name="can_focus">False</property>
+        <property name="margin_left">10</property>
+        <property name="margin_right">10</property>
+        <property name="margin_top">10</property>
+        <property name="margin_bottom">10</property>
         <property name="orientation">vertical</property>
-        <property name="spacing">20</property>
-        <child internal-child="action_area">
-          <object class="GtkButtonBox" id="dialog-action_area1">
-            <property name="can_focus">False</property>
-            <property name="layout_style">spread</property>
-            <child>
-              <object class="GtkButton" id="quit_button">
-                <property name="label">_Quit</property>
-                <property name="visible">True</property>
-                <property name="can_focus">True</property>
-                <property name="receives_default">True</property>
-                <property name="image">image1</property>
-                <property name="relief">none</property>
-                <property name="use_underline">True</property>
-                <signal name="clicked" handler="quit_button_clicked" swapped="no"/>
-              </object>
-              <packing>
-                <property name="expand">True</property>
-                <property name="fill">True</property>
-                <property name="position">0</property>
-              </packing>
-            </child>
-            <child>
-              <object class="GtkButton" id="continue_button">
-                <property name="label">Continue</property>
-                <property name="visible">True</property>
-                <property name="can_focus">True</property>
-                <property name="has_default">True</property>
-                <property name="receives_default">True</property>
-                <property name="image">image2</property>
-                <property name="always_show_image">True</property>
-                <signal name="clicked" handler="continue_button_clicked" swapped="no"/>
-              </object>
-              <packing>
-                <property name="expand">True</property>
-                <property name="fill">True</property>
-                <property name="position">1</property>
-              </packing>
-            </child>
-          </object>
-          <packing>
-            <property name="expand">False</property>
-            <property name="fill">False</property>
-            <property name="position">0</property>
-          </packing>
-        </child>
+        <property name="spacing">50</property>
         <child>
-          <object class="GtkBox" id="box1">
+          <object class="GtkBox" id="box5">
             <property name="visible">True</property>
             <property name="can_focus">False</property>
             <property name="orientation">vertical</property>
-            <property name="spacing">50</property>
+            <property name="spacing">5</property>
             <child>
-              <object class="GtkBox" id="box5">
+              <object class="GtkBox" id="box6">
                 <property name="visible">True</property>
                 <property name="can_focus">False</property>
-                <property name="orientation">vertical</property>
                 <property name="spacing">5</property>
                 <child>
-                  <object class="GtkBox" id="box6">
+                  <object class="GtkLabel" id="label4">
                     <property name="visible">True</property>
                     <property name="can_focus">False</property>
-                    <property name="spacing">5</property>
-                    <child>
-                      <object class="GtkLabel" id="label4">
-                        <property name="visible">True</property>
-                        <property name="can_focus">False</property>
-                        <property name="xalign">0</property>
-                        <property name="label" translatable="yes">Your Anki folder:</property>
-                      </object>
-                      <packing>
-                        <property name="expand">False</property>
-                        <property name="fill">True</property>
-                        <property name="position">0</property>
-                      </packing>
-                    </child>
-                    <child>
-                      <object class="GtkEntry" id="anki_folder_entry">
-                        <property name="visible">True</property>
-                        <property name="can_focus">True</property>
-                        <property name="hexpand">True</property>
-                        <signal name="changed" handler="anki_folder_entry_changed" swapped="no"/>
-                      </object>
-                      <packing>
-                        <property name="expand">True</property>
-                        <property name="fill">True</property>
-                        <property name="position">1</property>
-                      </packing>
-                    </child>
-                    <child>
-                      <object class="GtkImage" id="anki_folder_image">
-                        <property name="visible">True</property>
-                        <property name="can_focus">False</property>
-                        <property name="tooltip_text" translatable="yes">This folder does not contain an Anki collection.</property>
-                        <property name="stock">gtk-dialog-warning</property>
-                      </object>
-                      <packing>
-                        <property name="expand">False</property>
-                        <property name="fill">True</property>
-                        <property name="position">2</property>
-                      </packing>
-                    </child>
-                    <child>
-                      <object class="GtkButton" id="anki_folder_button">
-                        <property name="label" translatable="yes">Choose...</property>
-                        <property name="visible">True</property>
-                        <property name="can_focus">True</property>
-                        <property name="receives_default">True</property>
-                        <property name="hexpand">False</property>
-                        <property name="image">image3</property>
-                        <property name="always_show_image">True</property>
-                        <signal name="clicked" handler="anki_folder_button_clicked" swapped="no"/>
-                      </object>
-                      <packing>
-                        <property name="expand">False</property>
-                        <property name="fill">True</property>
-                        <property name="position">3</property>
-                      </packing>
-                    </child>
+                    <property name="xalign">0</property>
+                    <property name="label" translatable="yes">Your Anki folder:</property>
                   </object>
                   <packing>
                     <property name="expand">False</property>
@@ -156,30 +61,87 @@
                   </packing>
                 </child>
                 <child>
-                  <object class="GtkLabel" id="anki_folder_label">
-                    <property name="name">50</property>
+                  <object class="GtkEntry" id="anki_folder_entry">
                     <property name="visible">True</property>
-                    <property name="can_focus">False</property>
-                    <property name="vexpand">True</property>
-                    <property name="yalign">0</property>
-                    <property name="label" translatable="yes">Usually this is something like {}. </property>
-                    <property name="wrap">True</property>
+                    <property name="can_focus">True</property>
+                    <property name="hexpand">True</property>
+                    <signal name="focus-out-event" handler="anki_folder_entry_focus_out_event" swapped="no"/>
                   </object>
                   <packing>
-                    <property name="expand">False</property>
+                    <property name="expand">True</property>
                     <property name="fill">True</property>
                     <property name="position">1</property>
                   </packing>
                 </child>
+                <child>
+                  <object class="GtkImage" id="anki_folder_image">
+                    <property name="visible">True</property>
+                    <property name="can_focus">False</property>
+                    <property name="tooltip_text" translatable="yes">This folder does not contain an Anki collection.</property>
+                    <property name="icon_name">dialog-warning</property>
+                    <property name="icon_size">3</property>
+                  </object>
+                  <packing>
+                    <property name="expand">False</property>
+                    <property name="fill">True</property>
+                    <property name="position">2</property>
+                  </packing>
+                </child>
+                <child>
+                  <object class="GtkButton" id="anki_folder_button">
+                    <property name="label" translatable="yes">Choose...</property>
+                    <property name="visible">True</property>
+                    <property name="can_focus">True</property>
+                    <property name="receives_default">True</property>
+                    <property name="hexpand">False</property>
+                    <property name="image">image3</property>
+                    <property name="always_show_image">True</property>
+                    <signal name="clicked" handler="anki_folder_button_clicked" swapped="no"/>
+                  </object>
+                  <packing>
+                    <property name="expand">False</property>
+                    <property name="fill">True</property>
+                    <property name="position">3</property>
+                  </packing>
+                </child>
               </object>
               <packing>
-                <property name="expand">True</property>
-                <property name="fill">False</property>
+                <property name="expand">False</property>
+                <property name="fill">True</property>
                 <property name="position">0</property>
               </packing>
             </child>
             <child>
-              <object class="GtkBox" id="box4">
+              <object class="GtkLabel" id="anki_folder_label">
+                <property name="name">50</property>
+                <property name="visible">True</property>
+                <property name="can_focus">False</property>
+                <property name="vexpand">True</property>
+                <property name="yalign">0</property>
+                <property name="label" translatable="yes">Usually this is something like {}. </property>
+                <property name="wrap">True</property>
+              </object>
+              <packing>
+                <property name="expand">False</property>
+                <property name="fill">True</property>
+                <property name="position">1</property>
+              </packing>
+            </child>
+          </object>
+          <packing>
+            <property name="expand">True</property>
+            <property name="fill">False</property>
+            <property name="position">0</property>
+          </packing>
+        </child>
+        <child>
+          <object class="GtkBox" id="box4">
+            <property name="visible">True</property>
+            <property name="can_focus">False</property>
+            <property name="orientation">vertical</property>
+            <property name="spacing">5</property>
+            <child>
+              <object class="GtkBox" id="box7">
                 <property name="visible">True</property>
                 <property name="can_focus">False</property>
                 <property name="spacing">5</property>
@@ -199,9 +161,10 @@
                 <child>
                   <object class="GtkEntry" id="photo_roster_entry">
                     <property name="visible">True</property>
+                    <property name="sensitive">False</property>
                     <property name="can_focus">True</property>
                     <property name="hexpand">True</property>
-                    <signal name="changed" handler="photo_roster_entry_changed" swapped="no"/>
+                    <signal name="focus-out-event" handler="photo_roster_entry_focus_out_event" swapped="no"/>
                   </object>
                   <packing>
                     <property name="expand">True</property>
@@ -213,7 +176,8 @@
                   <object class="GtkImage" id="photo_roster_image">
                     <property name="visible">True</property>
                     <property name="can_focus">False</property>
-                    <property name="stock">gtk-dialog-warning</property>
+                    <property name="icon_name">dialog-warning</property>
+                    <property name="icon_size">3</property>
                   </object>
                   <packing>
                     <property name="expand">False</property>
@@ -225,6 +189,7 @@
                   <object class="GtkButton" id="photo_roster_button">
                     <property name="label" translatable="yes">Choose...</property>
                     <property name="visible">True</property>
+                    <property name="sensitive">False</property>
                     <property name="can_focus">True</property>
                     <property name="receives_default">True</property>
                     <property name="hexpand">False</property>
@@ -240,71 +205,46 @@
                 </child>
               </object>
               <packing>
-                <property name="expand">True</property>
-                <property name="fill">False</property>
-                <property name="position">1</property>
+                <property name="expand">False</property>
+                <property name="fill">True</property>
+                <property name="position">0</property>
               </packing>
             </child>
             <child>
-              <object class="GtkBox" id="box2">
+              <object class="GtkLabel" id="photo_roster_label">
+                <property name="can_focus">False</property>
+                <property name="label" translatable="yes">There are {} students in this photo roster.</property>
+              </object>
+              <packing>
+                <property name="expand">False</property>
+                <property name="fill">True</property>
+                <property name="position">1</property>
+              </packing>
+            </child>
+          </object>
+          <packing>
+            <property name="expand">True</property>
+            <property name="fill">False</property>
+            <property name="position">1</property>
+          </packing>
+        </child>
+        <child>
+          <object class="GtkBox" id="box2">
+            <property name="visible">True</property>
+            <property name="can_focus">False</property>
+            <property name="orientation">vertical</property>
+            <property name="spacing">5</property>
+            <child>
+              <object class="GtkBox" id="box3">
                 <property name="visible">True</property>
                 <property name="can_focus">False</property>
-                <property name="orientation">vertical</property>
                 <property name="spacing">5</property>
                 <child>
-                  <object class="GtkBox" id="box3">
+                  <object class="GtkLabel" id="label3">
                     <property name="visible">True</property>
                     <property name="can_focus">False</property>
-                    <property name="spacing">5</property>
-                    <child>
-                      <object class="GtkLabel" id="label3">
-                        <property name="visible">True</property>
-                        <property name="can_focus">False</property>
-                        <property name="xalign">0</property>
-                        <property name="label" translatable="yes">Tag for these students:</property>
-                      </object>
-                      <packing>
-                        <property name="expand">False</property>
-                        <property name="fill">True</property>
-                        <property name="position">0</property>
-                      </packing>
-                    </child>
-                    <child>
-                      <object class="GtkEntry" id="tag_entry">
-                        <property name="visible">True</property>
-                        <property name="can_focus">True</property>
-                        <property name="hexpand">True</property>
-                        <signal name="changed" handler="tag_entry_changed" swapped="no"/>
-                      </object>
-                      <packing>
-                        <property name="expand">True</property>
-                        <property name="fill">True</property>
-                        <property name="position">1</property>
-                      </packing>
-                    </child>
-                    <child>
-                      <object class="GtkLabel" id="label1">
-                        <property name="visible">True</property>
-                        <property name="can_focus">False</property>
-                      </object>
-                      <packing>
-                        <property name="expand">False</property>
-                        <property name="fill">True</property>
-                        <property name="position">2</property>
-                      </packing>
-                    </child>
-                    <child>
-                      <object class="GtkLabel" id="label6">
-                        <property name="visible">True</property>
-                        <property name="can_focus">False</property>
-                        <property name="hexpand">False</property>
-                      </object>
-                      <packing>
-                        <property name="expand">False</property>
-                        <property name="fill">True</property>
-                        <property name="position">3</property>
-                      </packing>
-                    </child>
+                    <property name="xalign">0</property>
+                    <property name="label" translatable="yes">Tag for these students:</property>
                   </object>
                   <packing>
                     <property name="expand">False</property>
@@ -313,30 +253,140 @@
                   </packing>
                 </child>
                 <child>
-                  <object class="GtkLabel" id="tag_label">
+                  <object class="GtkEntry" id="tag_entry">
+                    <property name="visible">True</property>
+                    <property name="sensitive">False</property>
+                    <property name="can_focus">True</property>
+                    <property name="hexpand">True</property>
+                    <signal name="focus-out-event" handler="tag_entry_focus_out_event" swapped="no"/>
+                  </object>
+                  <packing>
+                    <property name="expand">True</property>
+                    <property name="fill">True</property>
+                    <property name="position">1</property>
+                  </packing>
+                </child>
+                <child>
+                  <object class="GtkLabel" id="label1">
                     <property name="visible">True</property>
                     <property name="can_focus">False</property>
-                    <property name="label" translatable="yes">There are {} students with this tag in your current Anki collection.</property>
-                    <property name="wrap">True</property>
                   </object>
                   <packing>
                     <property name="expand">False</property>
+                    <property name="fill">True</property>
+                    <property name="position">2</property>
+                  </packing>
+                </child>
+                <child>
+                  <object class="GtkLabel" id="label6">
+                    <property name="visible">True</property>
+                    <property name="can_focus">False</property>
+                    <property name="hexpand">False</property>
+                  </object>
+                  <packing>
+                    <property name="expand">False</property>
+                    <property name="fill">True</property>
+                    <property name="position">3</property>
+                  </packing>
+                </child>
+              </object>
+              <packing>
+                <property name="expand">False</property>
+                <property name="fill">True</property>
+                <property name="position">0</property>
+              </packing>
+            </child>
+            <child>
+              <object class="GtkLabel" id="tag_label">
+                <property name="can_focus">False</property>
+                <property name="label" translatable="yes">There are {} students with this tag in your current Anki collection.</property>
+                <property name="wrap">True</property>
+              </object>
+              <packing>
+                <property name="expand">False</property>
+                <property name="fill">True</property>
+                <property name="position">1</property>
+              </packing>
+            </child>
+          </object>
+          <packing>
+            <property name="expand">True</property>
+            <property name="fill">False</property>
+            <property name="position">2</property>
+          </packing>
+        </child>
+        <child>
+          <object class="GtkBox" id="box8">
+            <property name="visible">True</property>
+            <property name="can_focus">False</property>
+            <property name="orientation">vertical</property>
+            <child>
+              <object class="GtkButtonBox" id="buttonbox">
+                <property name="visible">True</property>
+                <property name="can_focus">False</property>
+                <property name="spacing">5</property>
+                <property name="homogeneous">True</property>
+                <property name="layout_style">spread</property>
+                <child>
+                  <object class="GtkButton" id="quit_button">
+                    <property name="label">_Quit</property>
+                    <property name="visible">True</property>
+                    <property name="can_focus">True</property>
+                    <property name="receives_default">True</property>
+                    <property name="image">image1</property>
+                    <property name="use_underline">True</property>
+                    <signal name="clicked" handler="quit_button_clicked" swapped="no"/>
+                  </object>
+                  <packing>
+                    <property name="expand">True</property>
+                    <property name="fill">True</property>
+                    <property name="position">0</property>
+                  </packing>
+                </child>
+                <child>
+                  <object class="GtkButton" id="start_button">
+                    <property name="label">_Start</property>
+                    <property name="visible">True</property>
+                    <property name="sensitive">False</property>
+                    <property name="can_focus">True</property>
+                    <property name="can_default">True</property>
+                    <property name="has_default">True</property>
+                    <property name="receives_default">True</property>
+                    <property name="image">image2</property>
+                    <property name="use_underline">True</property>
+                    <property name="always_show_image">True</property>
+                    <signal name="clicked" handler="start_button_clicked" swapped="no"/>
+                  </object>
+                  <packing>
+                    <property name="expand">True</property>
                     <property name="fill">True</property>
                     <property name="position">1</property>
                   </packing>
                 </child>
               </object>
               <packing>
-                <property name="expand">True</property>
-                <property name="fill">False</property>
-                <property name="position">2</property>
+                <property name="expand">False</property>
+                <property name="fill">True</property>
+                <property name="position">0</property>
+              </packing>
+            </child>
+            <child>
+              <object class="GtkProgressBar" id="progressbar">
+                <property name="can_focus">False</property>
+                <property name="text" translatable="yes">{} of {}</property>
+                <property name="show_text">True</property>
+              </object>
+              <packing>
+                <property name="expand">False</property>
+                <property name="fill">True</property>
+                <property name="position">1</property>
               </packing>
             </child>
           </object>
           <packing>
             <property name="expand">True</property>
-            <property name="fill">True</property>
-            <property name="position">1</property>
+            <property name="fill">False</property>
+            <property name="position">3</property>
           </packing>
         </child>
       </object>
