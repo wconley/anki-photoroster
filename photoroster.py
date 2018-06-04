@@ -17,7 +17,7 @@ gi.require_version("Gdk", "3.0")
 from gi.repository import Poppler
 from gi.repository import Gdk
 
-USE_PDFIMAGES_PROGRAM = True
+pdfimages_path = shutil.which("pdfimages")
 
 
 def load_existing_students(ankidir):
@@ -83,13 +83,13 @@ class PhotoRoster(object):
         "Iterate over this roster, yielding a Student object for each student"
 
         with ExitStack() as context_mgr_stack: # Does nothing, for now
-            if USE_PDFIMAGES_PROGRAM:
+            if pdfimages_path:
                 # Create a temp directory, and dump all the photos in it
                 # Thanks to the context manager, it's automagically cleaned up
                 tempdir = context_mgr_stack.enter_context(TemporaryDirectory())
                 image_prefix = os.path.join(tempdir, "photo")
                 subprocess.check_call(
-                        ["pdfimages", "-j", self.path, image_prefix], 
+                        [pdfimages_path, "-j", self.path, image_prefix], 
                         stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
             # Now iterate over all the students in the roster
             for pagenumber in range(self.roster.get_n_pages()):
@@ -106,7 +106,7 @@ class PhotoRoster(object):
                     name = PhotoRoster.get_first_line(pagetext, 
                             x1, x1 + 270, y1 + 197, y1 + 216)
                     # Get the image
-                    if USE_PDFIMAGES_PROGRAM:
+                    if pdfimages_path:
                         imagenumber = pagenumber * 6 + image_map.image_id
                         image = "{}-{:03}.jpg".format(image_prefix, imagenumber)
                     else:
@@ -127,34 +127,52 @@ class PhotoRoster(object):
 class Student(object):
     """A class to represent a single student's information and photo"""
 
-    def __init__(self, idnumber, name, image, tags):
+    def __init__(self, idnumber, name, photo, tags):
         self.idnumber = idnumber
         self.name_on_roster = name
         self.preferredname, self.fullname = Student._format_name(name)
-        self.image = image
+        self.photo = photo
         self.tags = tags.split()
 
-    def image_filename(self):
+    def photo_filename(self):
         return "UCLA_Student_{}.jpg".format(self.idnumber)
 
-    def save_image(self, directory, duplicate_callback=None):
-        oldpath = None
-        savepath = os.path.join(directory, self.image_filename())
-        if os.path.exists(savepath):
-            oldpath = savepath
-            savepath = savepath[:-4] + ".new.jpg"
-        if USE_PDFIMAGES_PROGRAM:
-            shutil.move(self.image, savepath)
+    def save_photo(self, directory):
+        """Saves the photo to the specified directory
+
+        If there was already an existing photo for this student, and the 
+        existing file is *not* identical to the new one, then the existing 
+        photo is backed up to a backup file, and the name of the backup file is 
+        returned. Otherwise, the return value from this function is None. This 
+        allows the caller to check the return value and either delete the 
+        backup file, inform the user of the existence of the backup file, or 
+        even present the user with a choice of which file to keep. For the 
+        latter case, note that the path to the new photo will be 
+            os.path.join(directory, student.photo_filename)
+        """
+
+        photopath = os.path.join(directory, self.photo_filename())
+        photopath_new = photopath_backup = photopath
+        i = 0
+        while os.path.exists(photopath_backup):
+            i += 1
+            photopath_backup = "{}.old{}.jpg".format(photopath[:-4], i)
+        if photopath_backup != photopath:
+            photopath_new = photopath + ".NEW"
+        if pdfimages_path:
+            shutil.move(self.photo, photopath_new)
         else:
-            pixbuf = Gdk.pixbuf_get_from_surface(self.image, 0, 0, 
-                    self.image.get_width(), self.image.get_height())
-            pixbuf.savev(savepath, "jpeg", ["quality"], ["90"])
-        if oldpath:
-            if filecmp.cmp(oldpath, savepath):
-                # The new one is identical to the old one
-                os.remove(savepath)
-            elif duplicate_callback:
-                duplicate_callback(self, oldpath, savepath)
+            pixbuf = Gdk.pixbuf_get_from_surface(self.photo, 0, 0, 
+                    self.photo.get_width(), self.photo.get_height())
+            pixbuf.savev(photopath_new, "jpeg", ["quality"], ["90"])
+        if photopath_backup == photopath: # There was no existing photo
+            return None
+        if filecmp.cmp(photopath, photopath_new): # New photo is same as old
+            os.remove(photopath_new)
+            return None
+        os.rename(photopath, photopath_backup)
+        os.rename(photopath_new, photopath)
+        return photopath_backup # New and old photos are different!
 
     def merge_tags(self, tags):
         for tag in self.tags:
@@ -163,7 +181,7 @@ class Student(object):
         self.tags = tags
 
     def __str__(self):
-        imagetag = '<img src="{}">'.format(self.image_filename())
+        imagetag = '<img src="{}">'.format(self.photo_filename())
         return ";".join((self.idnumber, imagetag, self.preferredname, 
                 self.fullname, " ".join(self.tags)))
 

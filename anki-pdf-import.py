@@ -70,23 +70,6 @@ def check_existing(student, existing_students):
     student.merge_tags(tags.split())
 
 
-def warn_user_callback(student, oldpath, newpath):
-    root, extension = os.path.splitext(oldpath)
-    n = 1
-    while True:
-        new_oldpath = "{}.old{}{}".format(root, n, extension)
-        if not os.path.exists(new_oldpath):
-            break
-        n += 1
-    os.rename(oldpath, new_oldpath)
-    os.rename(newpath, oldpath)
-    print("WARNING: A different photo already exists for {}.".format(
-            student.preferredname))
-    print("    Leaving both in the photos directory.")
-    print("    The old one is {}.".format(new_oldpath))
-    print("    The new one is {}.".format(oldpath))
-
-
 if __name__ == "__main__":
     args = parse_args()
     if args.photoroster.lower()[-4:] != ".pdf":
@@ -106,7 +89,14 @@ if __name__ == "__main__":
     with open(ankifilepath, "w") as ankifile:
         for student in roster:
             this_course.discard(student.idnumber)
-            student.save_image(photodir, duplicate_callback=warn_user_callback)
+            photo_backup = student.save_photo(photodir)
+            if photo_backup:
+                print("WARNING: A different photo already exists for " + 
+                        "{}.".format(student.preferredname))
+                print("    Leaving both in the photos directory.")
+                print("    The old one is {}.".format(photo_backup))
+                print("    The new one is {}.".format(
+                        os.path.join(photodir, student.photo_filename())))
             check_existing(student, existing_students)
             print(student, file=ankifile)
     if this_course:
